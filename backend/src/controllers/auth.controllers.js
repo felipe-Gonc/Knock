@@ -5,7 +5,7 @@ export const routerSignup = async (req, res) => {
   try {
     const { nome, email, password } = req.body;
 
-    if (password < 6) {
+    if (!password || password.length < 6) {
       return res
         .status(400)
         .json({ message: "Senha tem que ter no minimo 6 caracteres" });
@@ -27,18 +27,15 @@ export const routerSignup = async (req, res) => {
 
     await newUser.save();
 
-    if (newUser) {
-      res.status(201).json({
-        _id: newUser._id,
-        nome: newUser.nome,
-        email: newUser.email,
-        password: newUser.password,
-      });
-    } else {
-      res.status(400).json({ message: "Dados invalidos" });
-    }
+    return res.status(201).json({
+      _id: newUser._id,
+      nome: newUser.nome,
+      email: newUser.email,
+    });
+    
   } catch (error) {
-    console.log("Erro na Sigup", error);
+    console.error("Erro no Signup:", error);
+    return res.status(500).json({ message: "Erro interno no servidor" });
   }
 };
 
@@ -80,20 +77,46 @@ export const routerUpdate = async (req, res) => {
       updateData.password = await bcrypt.hash(password, salt);
     }
 
-    const updateUser = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      {new: true,}
-    );
+    const updateUser = await User.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
 
     res.status(200).json({
       _id: updateUser._id,
       nome: updateUser.nome,
-      email: updateUser.email
+      email: updateUser.email,
     });
-
   } catch (error) {
     console.log("Erro em Update", error);
     res.status(500).json({ message: "Erro interno" });
   }
 };
+
+export async function getUserByID(req, res) {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ message: "user não encontrado." });
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error em getUserByID", error);
+    res.status(500).json({ message: "Error interno" });
+  }
+}
+
+export async function deleteUser(req, res) {
+  try {
+    const deleteUser = await User.findByIdAndDelete(req.params.id);
+
+    if (!deleteUser)
+      return res.status(404).json({ message: "User não encontrado." });
+
+    res.status(200).json(deleteuser);
+  } catch (error) {
+    console.error("Error em deleteUser", error);
+    res.status(500).json({ message: "Error interno" });
+  }
+}
